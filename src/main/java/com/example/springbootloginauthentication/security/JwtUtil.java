@@ -1,5 +1,6 @@
 package com.example.springbootloginauthentication.security;
 
+import com.example.springbootloginauthentication.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -46,16 +47,21 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
+        return createToken(claims, user.getUsername());
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
+        return createToken(claims, subject, null);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, String payload) {
         return Jwts.builder()
                 .serializeToJsonWith(new JacksonSerializer<>())
                 .setClaims(claims)
                 .setSubject(subject)
+                .setPayload(payload)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(key)

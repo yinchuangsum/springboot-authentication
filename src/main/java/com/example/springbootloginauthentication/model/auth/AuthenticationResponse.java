@@ -1,4 +1,4 @@
-package com.example.springbootloginauthentication.model;
+package com.example.springbootloginauthentication.model.auth;
 
 import lombok.Data;
 
