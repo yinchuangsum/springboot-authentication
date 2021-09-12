@@ -1,7 +1,6 @@
 package com.example.springbootloginauthentication.security;
 
 import com.example.springbootloginauthentication.model.User;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

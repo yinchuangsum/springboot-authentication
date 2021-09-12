@@ -18,11 +18,12 @@ public class SpringbootLoginAuthenticationApplication {
     @Bean
     CommandLineRunner run(UserService userService) {
         return args -> {
-            Role admin = userService.saveRole(new Role(null, "ADMIN"));
-            Role user = userService.saveRole(new Role(null, "USER"));
+            // spring boot requires "ROLE_" prefix by default, look at https://web.archive.org/web/20180201001929/http://forum.spring.io/forum/spring-projects/security/51066-how-to-change-role-from-interceptor-url to modify
+            Role admin = userService.saveRole(new Role(null, "ROLE_ADMIN"));
+            Role user = userService.saveRole(new Role(null, "ROLE_USER"));
 
             userService.saveUser(new User(null, "foo", "foo", "foo", "foo", admin.getId()));
-            userService.saveUser(new User(null, "bar", "bar", "bar", "bar", admin.getId()));
+            userService.saveUser(new User(null, "bar", "bar", "bar", "bar", user.getId()));
         };
     }
 
