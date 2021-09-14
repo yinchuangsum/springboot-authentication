@@ -19,6 +19,8 @@ import java.util.function.Function;
 @Service
 public class JwtUtil {
     Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    long ACCESS_TOKEN_DURATION = 1000 * 60 * 60 * 10; // 10 mins
+    long REFREST_TOKEN_DURATION = 1000 * 60 * 60 * 24 * 7; // 1 week
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -46,23 +48,26 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(User user) {
+    public String generateAccessToken(User user) {
+        return generateToken(user, ACCESS_TOKEN_DURATION);
+    }
+
+    public String generateRefreshToken(User user) {
+        return generateToken(user, REFREST_TOKEN_DURATION);
+    }
+
+    private String generateToken(User user, long validDuration) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, user.getUsername());
+        return createToken(claims, user.getUsername(), validDuration);
     }
 
-    private String createToken(Map<String, Object> claims, String subject) {
-        return createToken(claims, subject, null);
-    }
-
-    private String createToken(Map<String, Object> claims, String subject, String payload) {
+    private String createToken(Map<String, Object> claims, String subject, long validDuration) {
         return Jwts.builder()
                 .serializeToJsonWith(new JacksonSerializer<>())
-                .setClaims(claims)
+                .setClaims(claims) // any info to pass
                 .setSubject(subject)
-                .setPayload(payload)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + validDuration))
                 .signWith(key)
                 .compact();
     }

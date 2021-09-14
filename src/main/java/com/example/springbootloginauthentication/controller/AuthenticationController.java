@@ -10,15 +10,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
 public class AuthenticationController {
 
+    private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
+    private final UserDetailsService userDetailsService;
     private final JwtUtil jwtTokenUtil;
 
     @PostMapping(value = "/authenticate")
@@ -33,11 +43,39 @@ public class AuthenticationController {
             throw new Exception("Incorrect username or password", e);
         }
 
-        final User user = userService.getUser(authenticationRequest.getUsername());
+        User user = userService.getUser(authenticationRequest.getUsername());
 
-        final String jwt = jwtTokenUtil.generateToken(user);
+        String accessToken = jwtTokenUtil.generateAccessToken(user);
+        String refreshToken = jwtTokenUtil.generateRefreshToken(user);
 
-        return new AuthenticationResponse(jwt);
+        return new AuthenticationResponse(accessToken, refreshToken);
+    }
 
+    @GetMapping(value = "/authenticate/refresh")
+    @ResponseBody
+    public AuthenticationResponse refreshToken(HttpServletRequest request) throws Exception {
+        String username = null;
+        String refreshToken = null;
+        String accessToken = null;
+        final String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            refreshToken = authorizationHeader.substring(7);
+            username = jwtUtil.extractUsername(refreshToken);
+        }
+
+        if (username != null) {
+            User user = userService.getUser(username);
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(username, "", new ArrayList<>());
+            if (jwtUtil.validateToken(refreshToken, userDetails)) {
+                accessToken = jwtTokenUtil.generateAccessToken(user);
+            }
+        }
+
+        if (accessToken != null) {
+            return new AuthenticationResponse(accessToken, refreshToken);
+        }
+
+        throw new RuntimeException("Missing JWT Token");
     }
 }
